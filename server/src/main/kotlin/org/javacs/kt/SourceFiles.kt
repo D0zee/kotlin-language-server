@@ -181,7 +181,6 @@ class SourceFiles(
     }
 
     fun addWorkspaceRoot(root: Path) {
-        // TODO: gsoc remove usual kt files
         val addSources = findSourceFiles(root)
 
         logAdded(addSources, root)
@@ -254,7 +253,7 @@ private fun patch(sourceText: String, change: TextDocumentContentChangeEvent): S
 }
 
 private fun findSourceFiles(root: Path): Set<URI> {
-    val sourceMatcher = FileSystems.getDefault().getPathMatcher("glob:*.{kts}")
+    val sourceMatcher = FileSystems.getDefault().getPathMatcher("glob:*.{gradle.kts}")
     return SourceExclusions(root)
         .walkIncluded()
         .filter { sourceMatcher.matches(it.fileName) }

@@ -10,6 +10,7 @@ import org.gradle.tooling.model.kotlin.dsl.KotlinDslScriptsModel
 
 import org.javacs.kt.LOG
 import org.javacs.kt.compiler.CompilationEnvironment
+import org.javacs.kt.gradleversions.GradleVersionsManager
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -103,8 +104,10 @@ object BuildFileManager {
     }
 
     private fun getKotlinDSLScriptsModels(pathToDirs: File): Pair<Boolean, Map<File, KotlinDslScriptModel>> {
-        // use last version of gradle because some features isn't supported by default gradle version
-        GradleConnector.newConnector().forProjectDirectory(pathToDirs).useGradleVersion("8.2.1")
+        // TODO: use a gradle version from a gradle wrapper of each project
+        GradleConnector.newConnector().forProjectDirectory(pathToDirs).useGradleVersion(
+            GradleVersionsManager.getLastGradleVersion()
+        )
             .connect().use {
                 return try {
                     val action = CompositeModelQuery(KotlinDslScriptsModel::class.java)

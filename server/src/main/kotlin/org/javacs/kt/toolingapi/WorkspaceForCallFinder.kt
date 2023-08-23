@@ -1,8 +1,11 @@
 package org.javacs.kt.toolingapi
 
 import org.javacs.kt.LOG
+import java.io.FileInputStream
 import java.nio.file.Path
 import kotlin.io.path.exists
+import java.util.Properties
+
 
 object WorkspaceForCallFinder {
 
@@ -23,17 +26,17 @@ object WorkspaceForCallFinder {
     private fun findParent(pathToWorkspace: Path): Path? {
         val prefsFile =
             pathToWorkspace.resolve(".settings").resolve("org.eclipse.buildship.core.prefs")
-        if (!prefsFile.exists()) return null
 
-        var relativePathToParent: String? = null
-        prefsFile.toFile().forEachLine {
-            if (it.startsWith("connection.project.dir=")) {
-                relativePathToParent = it.substring(it.indexOf('=') + 1).trim()
-            }
+        val corePrefs = Properties()
+        try{
+            corePrefs.load(FileInputStream(prefsFile.toFile()))
+        }
+        catch (e: Exception){
+            return null
         }
 
-        if (relativePathToParent == null) return null
-        return pathToWorkspace.resolve(relativePathToParent!!).normalize()
+        val relativePathToParent = corePrefs.getProperty("connection.project.dir") ?: return null
+        return pathToWorkspace.resolve(relativePathToParent).normalize()
     }
 
     private fun containsSettingsFile(path: Path): Boolean {

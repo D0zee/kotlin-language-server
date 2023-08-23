@@ -2,7 +2,9 @@ package org.javacs.kt.gradleversions
 
 import org.javacs.kt.gradleversions.PublishedGradleVersions.LookupStrategy
 import org.javacs.kt.LOG
+import java.io.FileInputStream
 import java.nio.file.Path
+import java.util.*
 import kotlin.io.path.exists
 
 object GradleVersionsManager {
@@ -29,16 +31,17 @@ object GradleVersionsManager {
     fun getDistributionURLFromWrapper(pathToDir: Path): String? {
         val propertiesFile =
             pathToDir.resolve("gradle").resolve("wrapper").resolve("gradle-wrapper.properties")
-        if (!propertiesFile.exists()) {
+
+        val wrapperProp = Properties()
+        try{
+            wrapperProp.load(FileInputStream(propertiesFile.toFile()))
+        }
+        catch (e: Exception){
             return null
         }
-        var distributionURL: String? = null
-        propertiesFile.toFile().forEachLine {
-            if (it.startsWith("distributionUrl")) {
-                distributionURL = it.substring(it.indexOf('=') + 1)
-            }
-        }
-        return distributionURL?.trim()?.replace("\\", "")
+
+        val distributionURL = wrapperProp.getProperty("distributionUrl") ?: return null
+        return distributionURL.trim()
     }
 }
 

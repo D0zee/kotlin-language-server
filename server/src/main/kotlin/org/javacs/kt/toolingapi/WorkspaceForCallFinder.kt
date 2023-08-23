@@ -28,7 +28,7 @@ object WorkspaceForCallFinder {
         var relativePathToParent: String? = null
         prefsFile.toFile().forEachLine {
             if (it.startsWith("connection.project.dir=")) {
-                relativePathToParent = it.substring(it.indexOf('=') + 1)
+                relativePathToParent = it.substring(it.indexOf('=') + 1).trim()
             }
         }
 

@@ -12,6 +12,7 @@ import org.javacs.kt.LOG
 import org.javacs.kt.compiler.CompilationEnvironment
 import org.javacs.kt.gradleversions.GradleVersionsManager
 import java.io.File
+import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -47,7 +48,7 @@ object BuildFileManager {
 
     fun updateBuildEnvironment(pathToFile: Path, updatedPluginBlock: Boolean = false) {
         val workspace = pathToFile.parent
-        LOG.info { "UPDATE build env $workspace \n workspaces: \n $invokedWorkspaces" }
+        LOG.info { "UPDATE build env $workspace" }
 
         val workspaceForCall = WorkspaceForCallFinder.getWorkspaceForCall(workspace) ?: return
 
@@ -59,9 +60,7 @@ object BuildFileManager {
 
     fun updateAllBuildEnvironments() {
         LOG.info {
-            "UPDATE all build environments \n" +
-                " workspaces: \n" +
-                " $invokedWorkspaces"
+            "UPDATE all build environments"
         }
 
         for (workspace in invokedWorkspaces) {
@@ -85,7 +84,8 @@ object BuildFileManager {
     fun removeWorkspace(pathToWorkspace: Path) {
         buildEnvByFile =
             buildEnvByFile.filter { !it.key.startsWith(pathToWorkspace) }.toMutableMap()
-        invokedWorkspaces = invokedWorkspaces.filter { !it.startsWith(pathToWorkspace) }.toMutableSet()
+        invokedWorkspaces =
+            invokedWorkspaces.filter { !it.startsWith(pathToWorkspace) }.toMutableSet()
     }
 
     private fun createEnvForEachFile(workspace: File) {
@@ -98,16 +98,28 @@ object BuildFileManager {
 
         for ((file, model) in scriptModelByFile) {
             val classpath = model.classPath.map { it.toPath() }.let { HashSet(it) }
+            val implicitImports = model.implicitImports
             commonBuildClasspath += classpath
-            buildEnvByFile[file.toPath()] = CompilationEnvironment(emptySet(), classpath)
+            buildEnvByFile[file.toPath()] =
+                CompilationEnvironment(emptySet(), classpath, implicitImports)
         }
     }
 
     private fun getKotlinDSLScriptsModels(pathToDirs: File): Pair<Boolean, Map<File, KotlinDslScriptModel>> {
         // TODO: use a gradle version from a gradle wrapper of each project
-        GradleConnector.newConnector().forProjectDirectory(pathToDirs).useGradleVersion(
-            GradleVersionsManager.getLastGradleVersion()
-        )
+        var gradleConnector = GradleConnector.newConnector().forProjectDirectory(pathToDirs)
+        val gradleDistributionURL =
+            GradleVersionsManager.getDistributionURLFromWrapper(pathToDirs.toPath())
+        gradleConnector = if (gradleDistributionURL != null) {
+            LOG.info { "used distribution $gradleDistributionURL" }
+            gradleConnector.useDistribution(URI.create(gradleDistributionURL))
+        } else {
+            val lastGradleVersion = GradleVersionsManager.getLastGradleVersion()
+            gradleConnector.useGradleVersion(lastGradleVersion)
+        }
+
+
+        gradleConnector
             .connect().use {
                 return try {
                     val action = CompositeModelQuery(KotlinDslScriptsModel::class.java)

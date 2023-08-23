@@ -87,7 +87,8 @@ private val GRADLE_DSL_DEPENDENCY_PATTERN = Regex("^gradle-(?:kotlin-dsl|core).*
  */
 class CompilationEnvironment(
     javaSourcePath: Set<Path>,
-    classPath: Set<Path>
+    classPath: Set<Path>,
+    implicitImports: List<String> = BuildFileManager.defaultModel.implicitImports
 ) : Closeable {
     private val disposable = Disposer.newDisposable()
 
@@ -162,7 +163,7 @@ class CompilationEnvironment(
 
                             override val dependencyResolver: DependenciesResolver = object : DependenciesResolver {
                                 override fun resolve(scriptContents: ScriptContents, environment: Environment) = ResolveResult.Success(ScriptDependencies(
-                                    imports = BuildFileManager.defaultModel.implicitImports
+                                    imports = implicitImports
                                 ))
                             }
                         }) })
